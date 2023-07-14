@@ -17,6 +17,7 @@ class Quote(models.Model):
 class Message(models.Model):
     content = models.TextField()
     queue = models.CharField(max_length=255)
+    method = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

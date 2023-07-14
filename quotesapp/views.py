@@ -6,8 +6,16 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import *
 from .serializers import *
-from .producer import publish
+from .producer import Producer
+import threading
 
+# Instantiate Producer
+producer = Producer('localhost', default_queue='likes')
+
+
+# Start heartbeat on a separate thread
+heartbeat_thread = threading.Thread(target=producer.start_heartbeat, args=(10, 'likes', ))
+heartbeat_thread.start()
 
 # Create your views here.
 class QuoteViewset(viewsets.ViewSet):
@@ -20,7 +28,7 @@ class QuoteViewset(viewsets.ViewSet):
         serializer = QuoteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        publish('quote_created', serializer.data)
+        producer.publish(serializer.data, method='quote_created')
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def retrieve(self, request, pk=None):
@@ -33,21 +41,19 @@ class QuoteViewset(viewsets.ViewSet):
         serializer = QuoteSerializer(instance=product, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        publish('quote_updated', serializer.data)
+        producer.publish(serializer.data, method='quote_updated')
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def destroy(self, request, pk=None):
         product = Quote.objects.get(pk=pk)
         product.delete()
-        publish('quote_deleted', pk)
+        producer.publish({'id': pk}, method='quote_deleted')
         return Response('Quote deleted')
-
 
 class UserAPIView(APIView):
     def get(self, _):
         users = User.objects.all()
         return Response(UserSerializer(users, many=True).data)
-
 
 class UserDetailAPIView(APIView):
     def get_user(self, pk):
