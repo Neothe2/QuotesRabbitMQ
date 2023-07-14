@@ -12,3 +12,12 @@ class Quote(models.Model):
 
     def __dir__(self):
         return self.title
+
+
+class Message(models.Model):
+    content = models.TextField()
+    queue = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
